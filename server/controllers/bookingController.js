@@ -58,10 +58,11 @@ const generateBookingReference = () => {
  * 2. Fetch cruise
  * 3. Atomically decrement capacity only if enough capacity exists ({ capacityLeft: { $gte: count } })
  * 4. Validate promo usage
- * 5. Calculate final price
- * 6. Create booking
- * 7. Create promo redemption
- * 8. COMMIT (or ROLLBACK on any failure)
+ * 5. Calculate final price (Server is the sole authority; never trusts client-submitted totals)
+ * 6. Detect stale quotes if pricing changed (QUOTE_EXPIRED)
+ * 7. Create booking
+ * 8. Create promo redemption
+ * 9. COMMIT (or ROLLBACK on any failure)
  */
 const createBooking = async (req, res, next) => {
   let session = null;
@@ -76,7 +77,7 @@ const createBooking = async (req, res, next) => {
   let cruiseDoc = null;
 
   try {
-    const { cruiseId, customer, ages, services = {}, promoCode } = req.body;
+    const { cruiseId, customer, ages, services = {}, promoCode, quoteHash, pricingHash, expectedTotal } = req.body;
 
     // ── Step 1: Validate passengers ──────────────────────────────────────────
     if (!cruiseId || !customer || !customer.name || !customer.email || !ages) {
@@ -162,33 +163,54 @@ const createBooking = async (req, res, next) => {
         const err = new Error(promoResult.message);
         err.statusCode = 422;
         err.code = promoResult.reason;
+        err.reason = promoResult.reason;
         throw err;
       }
 
       resolvedPromo = promoResult.promo;
     }
 
-    // ── Step 6: Calculate final price ───────────────────────────────────────
+    // ── Step 6: Calculate final price on server (Backend is the sole authority)
     const quote = await buildQuoteAsync(cruiseDoc, ages, services, resolvedPromo);
+
+    // ── Check for stale quote if quoteHash/pricingHash/expectedTotal was supplied ─
+    const clientHash = quoteHash || pricingHash;
+    if (clientHash && clientHash !== quote.pricingHash) {
+      const err = new Error('Pricing has changed. Please request a new quote.');
+      err.statusCode = 409;
+      err.code = 'QUOTE_EXPIRED';
+      err.reason = 'QUOTE_EXPIRED';
+      throw err;
+    }
+
+    if (expectedTotal !== undefined && expectedTotal !== null) {
+      if (Math.abs(Number(expectedTotal) - quote.pricing.total) > 0.01) {
+        const err = new Error('Pricing has changed. Please request a new quote.');
+        err.statusCode = 409;
+        err.code = 'QUOTE_EXPIRED';
+        err.reason = 'QUOTE_EXPIRED';
+        throw err;
+      }
+    }
 
     // ── Step 7: Generate unique booking reference (e.g. ODY-20260818-A7F42C) ─
     let reference = generateBookingReference();
 
-    // Ensure collision resistance (retry if extraordinarily collided)
+    // Ensure collision resistance
     let collision = await Booking.findOne({ reference });
     while (collision) {
       reference = generateBookingReference();
       collision = await Booking.findOne({ reference });
     }
 
-    // ── Step 8: Create booking document ─────────────────────────────────────
+    // ── Step 8: Create booking document with server-calculated amounts ───────
     const bookingData = {
       reference,
       customerId: customerDoc._id,
       cruiseId: cruiseDoc._id,
       passengers: quote.passengers,
       services: quote.services,
-      pricing: quote.pricing,
+      pricing: quote.pricing, // Authoritative calculated amount saved
       pricingSnapshot: quote.pricingSnapshot,
       promoCodeUsed: resolvedPromo ? resolvedPromo.code : null,
     };

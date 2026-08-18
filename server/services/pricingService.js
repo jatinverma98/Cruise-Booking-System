@@ -7,6 +7,7 @@
  * Pricing rules and optional service rates are loaded dynamically from MongoDB.
  */
 
+const crypto = require('crypto');
 const PricingRule = require('../models/PricingRule');
 
 // ── Default Fallback Rules (Used when DB rule is not yet seeded / in unit tests) ──
@@ -105,6 +106,35 @@ const createError = (statusCode, message, code) => {
   err.statusCode = statusCode;
   err.code = code;
   return err;
+};
+
+/**
+ * Computes a cryptographic hash of the pricing rates, rules, and total at quote time.
+ * Used to detect stale quotes if pricing rules or cruise fares change before booking confirmation.
+ *
+ * @param {object} snapshot
+ * @param {number} total
+ * @returns {string} 16-character hex hash
+ */
+const generatePricingHash = (snapshot, total) => {
+  const childFareRules = snapshot.childFareRules instanceof Map
+    ? Object.fromEntries(snapshot.childFareRules)
+    : snapshot.childFareRules;
+  const groupDiscountRules = snapshot.groupDiscountRules instanceof Map
+    ? Object.fromEntries(snapshot.groupDiscountRules)
+    : snapshot.groupDiscountRules;
+
+  const payload = JSON.stringify({
+    adultFare: snapshot.adultFare,
+    childFareRules,
+    groupDiscountRules,
+    servicePrices: snapshot.servicePrices,
+    taxRate: snapshot.taxRate,
+    promo: snapshot.promo || snapshot.promoSnapshot,
+    total,
+  });
+
+  return crypto.createHash('sha256').update(payload).digest('hex').substring(0, 16);
 };
 
 /**
@@ -267,7 +297,7 @@ const calculateServicesTotal = (passengerCount, nights, services, servicePrices 
  * @param {object} services      - { insurance, wifi, shoreExcursion }
  * @param {object|null} promo    - Validated promo code document (or null)
  * @param {object|null} [rules]  - Dynamic rules configuration (optional)
- * @returns {object} Full quote object with detailed breakdown
+ * @returns {object} Full quote object with detailed breakdown & pricingHash
  */
 const buildQuote = (cruise, ages, services = {}, promo = null, rules = null) => {
   validatePassengers(ages);
@@ -338,6 +368,18 @@ const buildQuote = (cruise, ages, services = {}, promo = null, rules = null) => 
   // 9. Grand total
   const total = round2(taxableSubtotal + tax);
 
+  const snapshot = {
+    adultFare: cruise.adultFare,
+    childFareRules: activeRules.childFareRules,
+    groupDiscountRules: activeRules.groupDiscountRules,
+    servicePrices: activeRules.servicePrices,
+    taxRate: taxRate,
+    promo: promoSnapshot,
+    promoSnapshot,
+  };
+
+  const pricingHash = generatePricingHash(snapshot, total);
+
   return {
     passengers,
     services: resolvedServices,
@@ -355,15 +397,9 @@ const buildQuote = (cruise, ages, services = {}, promo = null, rules = null) => 
       tax,
       total,
     },
-    pricingSnapshot: {
-      adultFare: cruise.adultFare,
-      childFareRules: activeRules.childFareRules,
-      groupDiscountRules: activeRules.groupDiscountRules,
-      servicePrices: activeRules.servicePrices,
-      taxRate: taxRate,
-      promo: promoSnapshot,
-      promoSnapshot,
-    },
+    pricingSnapshot: snapshot,
+    pricingHash,
+    quoteHash: pricingHash,
   };
 };
 
@@ -413,6 +449,7 @@ module.exports = {
   buildQuote,
   buildQuoteAsync,
   reconstructHistoricalPrice,
+  generatePricingHash,
   getPricingRules,
   validatePassengers,
   calculatePassengerFare,

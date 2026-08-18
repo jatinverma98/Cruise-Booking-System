@@ -112,11 +112,17 @@ const CruiseDetailPage = () => {
         ages: ages.filter((a) => a !== ''),
         services,
         promoCode: appliedPromo?.code || null,
+        quoteHash: quote.quoteHash || quote.pricingHash,
+        expectedTotal: quote.pricing.total,
       });
 
       navigate(`/booking/${booking.reference}`);
     } catch (err) {
-      setBookingError(err.response?.data?.message || 'Booking failed. Please try again.');
+      const msg = err.response?.data?.message || 'Booking failed. Please try again.';
+      setBookingError(msg);
+      if (err.response?.data?.reason === 'QUOTE_EXPIRED' || err.response?.data?.code === 'QUOTE_EXPIRED') {
+        fetchQuote(); // Automatically fetch fresh quote
+      }
     } finally {
       setBookingLoading(false);
     }
