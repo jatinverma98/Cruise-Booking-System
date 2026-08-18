@@ -1,11 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import ScrollToAnchor from './components/ScrollToAnchor';
 import HomePage from './pages/HomePage';
 import CruiseDetailPage from './pages/CruiseDetailPage';
 import BookingConfirmationPage from './pages/BookingConfirmationPage';
 
 const App = () => (
   <BrowserRouter>
+    <ScrollToAnchor />
     <Navbar />
     <Routes>
       <Route path="/" element={<HomePage />} />

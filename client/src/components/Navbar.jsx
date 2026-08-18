@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,6 +20,21 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   }, [location]);
 
+  const handleNavClick = (e, targetId) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+
+    if (location.pathname === '/') {
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.history.pushState(null, '', `#${targetId}`);
+      }
+    } else {
+      navigate(`/#${targetId}`);
+    }
+  };
+
   return (
     <>
       <header
@@ -29,7 +45,7 @@ const Navbar = () => {
           right: 0,
           zIndex: 50,
           transition: 'all 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-          backgroundColor: scrolled ? 'rgba(7, 25, 35, 0.88)' : 'transparent',
+          backgroundColor: scrolled ? 'rgba(7, 25, 35, 0.92)' : 'transparent',
           backdropFilter: scrolled ? 'blur(16px)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
           borderBottom: scrolled
@@ -92,8 +108,9 @@ const Navbar = () => {
             }}
             className="hidden md:flex"
           >
-            <Link
-              to="/#featured-cruises"
+            <a
+              href="#featured-cruises"
+              onClick={(e) => handleNavClick(e, 'featured-cruises')}
               style={{
                 fontSize: '12px',
                 fontWeight: 600,
@@ -102,14 +119,16 @@ const Navbar = () => {
                 color: '#DCE5E8',
                 textDecoration: 'none',
                 transition: 'color 200ms ease',
+                cursor: 'pointer',
               }}
               onMouseEnter={(e) => (e.target.style.color = '#FFFFFF')}
               onMouseLeave={(e) => (e.target.style.color = '#DCE5E8')}
             >
               Cruises
-            </Link>
-            <Link
-              to="/#destinations"
+            </a>
+            <a
+              href="#destinations"
+              onClick={(e) => handleNavClick(e, 'destinations')}
               style={{
                 fontSize: '12px',
                 fontWeight: 600,
@@ -118,14 +137,16 @@ const Navbar = () => {
                 color: '#DCE5E8',
                 textDecoration: 'none',
                 transition: 'color 200ms ease',
+                cursor: 'pointer',
               }}
               onMouseEnter={(e) => (e.target.style.color = '#FFFFFF')}
               onMouseLeave={(e) => (e.target.style.color = '#DCE5E8')}
             >
               Destinations
-            </Link>
-            <Link
-              to="/#experience"
+            </a>
+            <a
+              href="#experience"
+              onClick={(e) => handleNavClick(e, 'experience')}
               style={{
                 fontSize: '12px',
                 fontWeight: 600,
@@ -134,14 +155,16 @@ const Navbar = () => {
                 color: '#DCE5E8',
                 textDecoration: 'none',
                 transition: 'color 200ms ease',
+                cursor: 'pointer',
               }}
               onMouseEnter={(e) => (e.target.style.color = '#FFFFFF')}
               onMouseLeave={(e) => (e.target.style.color = '#DCE5E8')}
             >
               Experience
-            </Link>
-            <Link
-              to="/#about"
+            </a>
+            <a
+              href="#about"
+              onClick={(e) => handleNavClick(e, 'about')}
               style={{
                 fontSize: '12px',
                 fontWeight: 600,
@@ -150,12 +173,13 @@ const Navbar = () => {
                 color: '#DCE5E8',
                 textDecoration: 'none',
                 transition: 'color 200ms ease',
+                cursor: 'pointer',
               }}
               onMouseEnter={(e) => (e.target.style.color = '#FFFFFF')}
               onMouseLeave={(e) => (e.target.style.color = '#DCE5E8')}
             >
               About
-            </Link>
+            </a>
 
             {/* Find Booking Button */}
             <Link
@@ -250,58 +274,62 @@ const Navbar = () => {
             ODYSSEUS
           </span>
 
-          <Link
-            to="/#featured-cruises"
-            onClick={() => setMobileMenuOpen(false)}
+          <a
+            href="#featured-cruises"
+            onClick={(e) => handleNavClick(e, 'featured-cruises')}
             style={{
               fontSize: '18px',
               letterSpacing: '0.18em',
               color: '#F5F3EF',
               textDecoration: 'none',
               textTransform: 'uppercase',
+              cursor: 'pointer',
             }}
           >
             Cruises
-          </Link>
-          <Link
-            to="/#destinations"
-            onClick={() => setMobileMenuOpen(false)}
+          </a>
+          <a
+            href="#destinations"
+            onClick={(e) => handleNavClick(e, 'destinations')}
             style={{
               fontSize: '18px',
               letterSpacing: '0.18em',
               color: '#F5F3EF',
               textDecoration: 'none',
               textTransform: 'uppercase',
+              cursor: 'pointer',
             }}
           >
             Destinations
-          </Link>
-          <Link
-            to="/#experience"
-            onClick={() => setMobileMenuOpen(false)}
+          </a>
+          <a
+            href="#experience"
+            onClick={(e) => handleNavClick(e, 'experience')}
             style={{
               fontSize: '18px',
               letterSpacing: '0.18em',
               color: '#F5F3EF',
               textDecoration: 'none',
               textTransform: 'uppercase',
+              cursor: 'pointer',
             }}
           >
             Experience
-          </Link>
-          <Link
-            to="/#about"
-            onClick={() => setMobileMenuOpen(false)}
+          </a>
+          <a
+            href="#about"
+            onClick={(e) => handleNavClick(e, 'about')}
             style={{
               fontSize: '18px',
               letterSpacing: '0.18em',
               color: '#F5F3EF',
               textDecoration: 'none',
               textTransform: 'uppercase',
+              cursor: 'pointer',
             }}
           >
             About
-          </Link>
+          </a>
           <Link
             to="/booking"
             onClick={() => setMobileMenuOpen(false)}
