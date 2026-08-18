@@ -292,9 +292,9 @@ describe('FR3: Pricing Snapshot Immutability', () => {
     expect(quote.pricingSnapshot.adultFare).toBe(99999);
   });
 
-  test('Snapshot contains taxRate 12%', () => {
+  test('Snapshot contains taxRate 0.12', () => {
     const quote = buildQuote(mockCruise, [30], {}, null);
-    expect(quote.pricingSnapshot.taxRate).toBe(12);
+    expect(quote.pricingSnapshot.taxRate).toBe(0.12);
   });
 
   test('Snapshot contains service prices in INR', () => {

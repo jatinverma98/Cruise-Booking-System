@@ -18,6 +18,9 @@ const servicesSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/**
+ * Stores the actual calculated amounts at booking time.
+ */
 const pricingSchema = new mongoose.Schema(
   {
     cruiseFare: { type: Number, required: true },
@@ -46,8 +49,9 @@ const promoSnapshotSchema = new mongoose.Schema(
 );
 
 /**
- * pricingSnapshot stores the exact rates used at booking time.
- * This ensures historical bookings are not affected by future price changes.
+ * pricingSnapshot stores the exact rates and rules used at booking time.
+ * This guarantees that historical bookings can always be reconstructed perfectly
+ * even if adult fares, service costs, tax rates, or promo rules change in the future.
  */
 const pricingSnapshotSchema = new mongoose.Schema(
   {
@@ -63,11 +67,15 @@ const pricingSnapshotSchema = new mongoose.Schema(
       required: true,
     },
     servicePrices: {
-      insurance: Number,
-      wifi: Number,
-      shoreExcursion: Number,
+      insurance: { type: Number, required: true },
+      wifi: { type: Number, required: true },
+      shoreExcursion: { type: Number, required: true },
     },
     taxRate: { type: Number, required: true },
+    promo: {
+      type: promoSnapshotSchema,
+      default: null,
+    },
     promoSnapshot: {
       type: promoSnapshotSchema,
       default: null,
@@ -83,6 +91,7 @@ const bookingSchema = new mongoose.Schema(
       required: true,
       unique: true,
       uppercase: true,
+      index: true,
     },
     customerId: {
       type: mongoose.Schema.Types.ObjectId,

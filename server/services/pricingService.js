@@ -360,7 +360,8 @@ const buildQuote = (cruise, ages, services = {}, promo = null, rules = null) => 
       childFareRules: activeRules.childFareRules,
       groupDiscountRules: activeRules.groupDiscountRules,
       servicePrices: activeRules.servicePrices,
-      taxRate: taxRate * 100,
+      taxRate: taxRate,
+      promo: promoSnapshot,
       promoSnapshot,
     },
   };
@@ -374,9 +375,44 @@ const buildQuoteAsync = async (cruise, ages, services = {}, promo = null) => {
   return buildQuote(cruise, ages, services, promo, rules);
 };
 
+/**
+ * Reconstructs the exact price breakdown for a historical booking using ONLY
+ * its embedded pricingSnapshot. Does not query or depend on current active rules.
+ *
+ * @param {object} booking - Booking document from MongoDB
+ * @returns {object} Reconstructed price quote
+ */
+const reconstructHistoricalPrice = (booking) => {
+  const snapshot = booking.pricingSnapshot;
+  const childFareRules = snapshot.childFareRules instanceof Map
+    ? Object.fromEntries(snapshot.childFareRules)
+    : snapshot.childFareRules;
+
+  const groupDiscountRules = snapshot.groupDiscountRules instanceof Map
+    ? Object.fromEntries(snapshot.groupDiscountRules)
+    : snapshot.groupDiscountRules;
+
+  const rules = {
+    taxRate: snapshot.taxRate > 1 ? snapshot.taxRate / 100 : snapshot.taxRate,
+    childFareRules,
+    groupDiscountRules,
+    servicePrices: snapshot.servicePrices,
+  };
+
+  const ages = booking.passengers.map((p) => p.age);
+  const cruise = {
+    adultFare: snapshot.adultFare,
+    nights: booking.cruiseId?.nights || 7,
+  };
+
+  const promo = snapshot.promo || snapshot.promoSnapshot;
+  return buildQuote(cruise, ages, booking.services, promo, rules);
+};
+
 module.exports = {
   buildQuote,
   buildQuoteAsync,
+  reconstructHistoricalPrice,
   getPricingRules,
   validatePassengers,
   calculatePassengerFare,
