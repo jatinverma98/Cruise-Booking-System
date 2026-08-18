@@ -129,7 +129,7 @@ Only one promo code per booking.
 
 - Payment processing
 - Email confirmation delivery
-- User authentication / login
+- User authentication / login for Admin, Agent and Customer roles
 - Admin panel for managing cruises
 - Cruise image uploads
 - Cancellation or modification of bookings

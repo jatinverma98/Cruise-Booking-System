@@ -1,27 +1,40 @@
 import { Link } from 'react-router-dom';
 import { formatINRCompact } from '../utils/currency';
 
+const SHIP_IMAGES = {
+  'Wonder of the Seas':
+    'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=1600&q=85',
+  'Celebrity Beyond':
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85',
+  'Norwegian Prima':
+    'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1600&q=85',
+  'Sky Princess':
+    'https://images.unsplash.com/photo-1599640842225-85d111c60e6b?auto=format&fit=crop&w=1600&q=85',
+  'MSC Seascape':
+    'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=1600&q=85',
+};
+
 const DESTINATION_IMAGES = {
   Caribbean:
-    'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=1600&q=85',
   Mediterranean:
-    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85',
   Alaska:
-    'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1600&q=85',
   'Northern Europe':
-    'https://images.unsplash.com/photo-1513519245088-0e12902e35ca?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1599640842225-85d111c60e6b?auto=format&fit=crop&w=1600&q=85',
   Bahamas:
-    'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=1600&q=85',
 };
 
 const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1599640842225-85d111c60e6b?auto=format&fit=crop&w=1200&q=80';
+  'https://images.unsplash.com/photo-1599640842225-85d111c60e6b?auto=format&fit=crop&w=1600&q=85';
 
 const CruiseCard = ({ cruise, isFeatured = false }) => {
   const { _id, cruiseLine, ship, destination, nights, adultFare, capacityLeft, available } = cruise;
   const isSoldOut = !available || capacityLeft === 0;
   const isLowCapacity = !isSoldOut && capacityLeft <= 4;
-  const imageUrl = DESTINATION_IMAGES[destination] || DEFAULT_IMAGE;
+  const imageUrl = SHIP_IMAGES[ship] || DESTINATION_IMAGES[destination] || DEFAULT_IMAGE;
 
   if (isFeatured) {
     return (
