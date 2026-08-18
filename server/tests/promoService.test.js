@@ -1,7 +1,7 @@
 /**
  * promoService.test.js
  *
- * Tests for promo validation logic.
+ * Unit tests for Functional Requirement 4: Promotional Code Validation
  * Uses Jest mocking to avoid real DB connections.
  */
 
@@ -26,9 +26,6 @@ const makePromo = (overrides = {}) => ({
   ...overrides,
 });
 
-// Mock Mongoose session chaining
-const mockSession = { session: jest.fn().mockReturnThis() };
-
 const mockFindOne = (promo) => {
   PromoCode.findOne = jest.fn().mockReturnValue({
     session: jest.fn().mockResolvedValue(promo),
@@ -45,97 +42,114 @@ const mockCountDocuments = (totalUses, customerUses) => {
   });
 };
 
-describe('Promo Validation', () => {
-  // ── Valid promo ─────────────────────────────────────────────────────────────
+describe('Functional Requirement 4: Promotional Code Validation', () => {
+  // ── 1. Valid percentage & fixed promo ────────────────────────────────────────
 
-  test('Valid promo returns { valid: true, promo }', async () => {
+  test('Valid percentage promo returns { valid: true, promo }', async () => {
     mockFindOne(makePromo());
     mockCountDocuments(0, 0);
 
-    const result = await validatePromoCode('SUMMER10', 'cust1', 1200);
+    const result = await validatePromoCode('SUMMER10', 'cust1', 12000);
     expect(result.valid).toBe(true);
     expect(result.promo.code).toBe('SUMMER10');
+    expect(result.promo.type).toBe('percentage');
+    expect(result.promo.value).toBe(10);
   });
 
-  // ── Invalid code ────────────────────────────────────────────────────────────
+  test('Valid fixed promo returns { valid: true, promo }', async () => {
+    mockFindOne(makePromo({ code: 'FIRST150', type: 'fixed', value: 150 }));
+    mockCountDocuments(0, 0);
 
-  test('Code does not exist → INVALID_CODE', async () => {
+    const result = await validatePromoCode('FIRST150', 'cust1', 12000);
+    expect(result.valid).toBe(true);
+    expect(result.promo.code).toBe('FIRST150');
+    expect(result.promo.type).toBe('fixed');
+    expect(result.promo.value).toBe(150);
+  });
+
+  // ── 2. PROMO_NOT_FOUND ──────────────────────────────────────────────────────
+
+  test('Code does not exist → PROMO_NOT_FOUND', async () => {
     mockFindOne(null);
 
-    const result = await validatePromoCode('BADCODE', 'cust1', 1200);
+    const result = await validatePromoCode('BADCODE', 'cust1', 12000);
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('INVALID_CODE');
+    expect(result.reason).toBe('PROMO_NOT_FOUND');
+    expect(result.message).toContain('was not found');
   });
 
-  // ── Not yet valid ───────────────────────────────────────────────────────────
+  test('Empty code string → PROMO_NOT_FOUND', async () => {
+    const result = await validatePromoCode('', 'cust1', 12000);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe('PROMO_NOT_FOUND');
+  });
 
-  test('Code not yet active → NOT_YET_VALID', async () => {
+  // ── 3. PROMO_NOT_STARTED ────────────────────────────────────────────────────
+
+  test('Current date before validFrom → PROMO_NOT_STARTED', async () => {
     mockFindOne(
       makePromo({
-        validFrom: new Date('2027-01-01'),
-        validTo: new Date('2027-12-31'),
+        validFrom: new Date('2028-01-01'),
+        validTo: new Date('2028-12-31'),
       })
     );
 
-    const result = await validatePromoCode('FUTURE', 'cust1', 1200);
+    const result = await validatePromoCode('FUTURE', 'cust1', 12000);
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('NOT_YET_VALID');
+    expect(result.reason).toBe('PROMO_NOT_STARTED');
+    expect(result.message).toContain('is not yet active');
   });
 
-  // ── Expired ─────────────────────────────────────────────────────────────────
+  // ── 4. PROMO_EXPIRED ────────────────────────────────────────────────────────
 
-  test('Expired code → EXPIRED (WINTER5 scenario)', async () => {
+  test('Current date after validTo → PROMO_EXPIRED (e.g. WINTER5)', async () => {
     mockFindOne(
       makePromo({
         code: 'WINTER5',
-        validFrom: new Date('2025-01-01'),
-        validTo: new Date('2025-03-31'),
+        validFrom: new Date('2024-01-01'),
+        validTo: new Date('2024-03-31'),
       })
     );
 
-    const result = await validatePromoCode('WINTER5', 'cust1', 500);
+    const result = await validatePromoCode('WINTER5', 'cust1', 12000);
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('EXPIRED');
+    expect(result.reason).toBe('PROMO_EXPIRED');
+    expect(result.message).toBe('This promotional code has expired.');
   });
 
-  // ── Total usage limit ───────────────────────────────────────────────────────
+  // ── 5. PROMO_TOTAL_LIMIT_REACHED ────────────────────────────────────────────
 
-  test('Total usage limit reached → TOTAL_USAGE_LIMIT_REACHED', async () => {
+  test('Total usage limit reached → PROMO_TOTAL_LIMIT_REACHED', async () => {
     mockFindOne(makePromo({ maxTotalUses: 3 }));
     mockCountDocuments(3, 0); // 3 uses already — at limit
 
-    const result = await validatePromoCode('CREW25', 'cust1', 1200);
+    const result = await validatePromoCode('CREW25', 'cust1', 12000);
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('TOTAL_USAGE_LIMIT_REACHED');
+    expect(result.reason).toBe('PROMO_TOTAL_LIMIT_REACHED');
+    expect(result.message).toContain('maximum total usage limit');
   });
 
-  // ── Per-customer usage limit ────────────────────────────────────────────────
+  // ── 6. PROMO_CUSTOMER_LIMIT_REACHED ─────────────────────────────────────────
 
-  test('Per-customer usage limit reached → CUSTOMER_USAGE_LIMIT_REACHED', async () => {
+  test('Per-customer usage limit reached → PROMO_CUSTOMER_LIMIT_REACHED', async () => {
     mockFindOne(makePromo({ maxTotalUses: 100, maxUsesPerCustomer: 1 }));
-    mockCountDocuments(5, 1); // Total: 5 (fine), customer: 1 (at limit)
+    mockCountDocuments(5, 1); // Total: 5, customer: 1 (at customer limit)
 
-    const result = await validatePromoCode('SUMMER10', 'cust1', 1200);
+    const result = await validatePromoCode('SUMMER10', 'cust1', 12000);
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('CUSTOMER_USAGE_LIMIT_REACHED');
+    expect(result.reason).toBe('PROMO_CUSTOMER_LIMIT_REACHED');
+    expect(result.message).toContain('maximum allowed number of times');
   });
 
-  // ── Minimum spend ───────────────────────────────────────────────────────────
+  // ── 7. PROMO_MINIMUM_SPEND_NOT_MET ──────────────────────────────────────────
 
-  test('Minimum spend not met → MINIMUM_SPEND_NOT_MET', async () => {
-    mockFindOne(makePromo({ minimumSpend: 1000 }));
+  test('Minimum spend not met → PROMO_MINIMUM_SPEND_NOT_MET', async () => {
+    mockFindOne(makePromo({ minimumSpend: 50000 }));
     mockCountDocuments(0, 0);
 
-    const result = await validatePromoCode('SUMMER10', 'cust1', 500); // subtotal = 500 < 1000
+    const result = await validatePromoCode('SUMMER10', 'cust1', 30000); // subtotal = 30000 < 50000
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('MINIMUM_SPEND_NOT_MET');
-  });
-
-  // ── No code provided ────────────────────────────────────────────────────────
-
-  test('Empty code → NO_CODE', async () => {
-    const result = await validatePromoCode('', 'cust1', 1200);
-    expect(result.valid).toBe(false);
-    expect(result.reason).toBe('NO_CODE');
+    expect(result.reason).toBe('PROMO_MINIMUM_SPEND_NOT_MET');
+    expect(result.message).toContain('minimum spend');
   });
 });

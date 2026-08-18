@@ -4,82 +4,88 @@ const PromoRedemption = require('../models/PromoRedemption');
 /**
  * promoService.js
  *
- * Responsible for validating promotional codes and checking usage limits.
- * Uses PromoRedemption documents as the source of truth for usage counts.
+ * Central service responsible for validating promotional codes and enforcing business rules.
+ * Uses PromoRedemption collection as the single source of truth for usage limits.
  */
 
 /**
  * Validate a promotional code against all business rules.
  *
+ * Supported rejection reasons:
+ *  - PROMO_NOT_FOUND
+ *  - PROMO_NOT_STARTED
+ *  - PROMO_EXPIRED
+ *  - PROMO_TOTAL_LIMIT_REACHED
+ *  - PROMO_CUSTOMER_LIMIT_REACHED
+ *  - PROMO_MINIMUM_SPEND_NOT_MET
+ *
  * @param {string} code          - Promo code entered by customer
- * @param {string|null} customerId - MongoDB ObjectId of the customer (or null if unknown)
+ * @param {string|null} customerId - MongoDB ObjectId of customer (or null if guest/quote)
  * @param {number} subtotal      - Booking subtotal before promo (for minimum spend check)
  * @param {object} [session]     - Optional Mongoose session for transaction support
  *
- * @returns {{ valid: true, promo: PromoCodeDocument }}
- *       or { valid: false, reason: string, message: string }
+ * @returns {Promise<{ valid: true, promo: object } | { valid: false, reason: string, message: string }>}
  */
-const validatePromoCode = async (code, customerId, subtotal, session = null) => {
+const validatePromoCode = async (code, customerId, subtotal = 0, session = null) => {
   if (!code || !code.trim()) {
     return {
       valid: false,
-      reason: 'NO_CODE',
+      reason: 'PROMO_NOT_FOUND',
       message: 'No promotional code provided.',
     };
   }
 
   const upperCode = code.trim().toUpperCase();
 
-  // 1. Does the code exist?
+  // 1. Code exists
   const promo = await PromoCode.findOne({ code: upperCode }).session(session);
   if (!promo) {
     return {
       valid: false,
-      reason: 'INVALID_CODE',
-      message: `Promotional code "${upperCode}" is not valid.`,
+      reason: 'PROMO_NOT_FOUND',
+      message: `Promotional code "${upperCode}" was not found.`,
     };
   }
 
   const now = new Date();
 
-  // 2. Has the validity window started?
+  // 2. Current booking date is within validFrom
   if (now < promo.validFrom) {
     return {
       valid: false,
-      reason: 'NOT_YET_VALID',
+      reason: 'PROMO_NOT_STARTED',
       message: `Promotional code "${upperCode}" is not yet active.`,
     };
   }
 
-  // 3. Has the code expired?
-  // Set validTo to end of day for inclusive date comparison
+  // 3. Current booking date is within validTo
   const validToEndOfDay = new Date(promo.validTo);
   validToEndOfDay.setHours(23, 59, 59, 999);
 
   if (now > validToEndOfDay) {
     return {
       valid: false,
-      reason: 'EXPIRED',
-      message: `Promotional code "${upperCode}" has expired.`,
+      reason: 'PROMO_EXPIRED',
+      message: 'This promotional code has expired.',
     };
   }
 
-  // 4. Has total usage limit been reached?
-  if (promo.maxTotalUses !== null) {
+  // 4. Total usage limit has not been reached
+  if (promo.maxTotalUses !== null && promo.maxTotalUses !== undefined) {
     const totalUses = await PromoRedemption.countDocuments({ promoCodeId: promo._id }).session(
       session
     );
     if (totalUses >= promo.maxTotalUses) {
       return {
         valid: false,
-        reason: 'TOTAL_USAGE_LIMIT_REACHED',
-        message: `Promotional code "${upperCode}" has reached its maximum usage limit.`,
+        reason: 'PROMO_TOTAL_LIMIT_REACHED',
+        message: `Promotional code "${upperCode}" has reached its maximum total usage limit.`,
       };
     }
   }
 
-  // 5. Has the per-customer usage limit been reached?
-  if (customerId && promo.maxUsesPerCustomer !== null) {
+  // 5. Customer usage limit has not been reached
+  if (customerId && promo.maxUsesPerCustomer !== null && promo.maxUsesPerCustomer !== undefined) {
     const customerUses = await PromoRedemption.countDocuments({
       promoCodeId: promo._id,
       customerId,
@@ -88,18 +94,18 @@ const validatePromoCode = async (code, customerId, subtotal, session = null) => 
     if (customerUses >= promo.maxUsesPerCustomer) {
       return {
         valid: false,
-        reason: 'CUSTOMER_USAGE_LIMIT_REACHED',
-        message: `You have already used promotional code "${upperCode}" the maximum number of times.`,
+        reason: 'PROMO_CUSTOMER_LIMIT_REACHED',
+        message: `You have already redeemed promotional code "${upperCode}" the maximum allowed number of times.`,
       };
     }
   }
 
-  // 6. Does the booking meet minimum spend?
+  // 6. Minimum spend is satisfied
   if (promo.minimumSpend && subtotal < promo.minimumSpend) {
     return {
       valid: false,
-      reason: 'MINIMUM_SPEND_NOT_MET',
-      message: `A minimum spend of $${promo.minimumSpend} is required to use this promotional code.`,
+      reason: 'PROMO_MINIMUM_SPEND_NOT_MET',
+      message: `A minimum spend of ₹${promo.minimumSpend.toLocaleString('en-IN')} is required to use this promotional code.`,
     };
   }
 

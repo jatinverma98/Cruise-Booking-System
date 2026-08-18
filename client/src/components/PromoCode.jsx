@@ -18,15 +18,18 @@ const PromoCode = ({ cruiseId, ages, services, onPromoApplied }) => {
         body: JSON.stringify({ code: code.trim(), cruiseId, ages, services }),
       });
       const data = await response.json();
-      const result = data.data;
+      const result = data.data || data;
 
-      if (result.valid) {
+      if (result.valid && result.promo) {
         setStatus('valid');
-        setMessage(`✓ Code applied: ${result.promo.type === 'percentage' ? `${result.promo.value}% off` : `$${result.promo.value} off`}`);
+        const discountText = result.promo.type === 'percentage'
+          ? `${result.promo.value}% discount`
+          : `₹${result.promo.value.toLocaleString('en-IN')} discount`;
+        setMessage(`✓ Code applied: ${result.promo.code} (${discountText})`);
         onPromoApplied(result.promo);
       } else {
         setStatus('invalid');
-        setMessage(result.message);
+        setMessage(result.message || 'Invalid promotional code.');
         onPromoApplied(null);
       }
     } catch {
@@ -64,6 +67,7 @@ const PromoCode = ({ cruiseId, ages, services, onPromoApplied }) => {
         {status !== 'valid' ? (
           <button
             id="promo-apply-btn"
+            type="button"
             className="btn-primary"
             onClick={handleApply}
             disabled={loading || !code.trim()}
@@ -74,6 +78,7 @@ const PromoCode = ({ cruiseId, ages, services, onPromoApplied }) => {
         ) : (
           <button
             id="promo-remove-btn"
+            type="button"
             onClick={handleRemove}
             style={{
               padding: '10px 18px',
@@ -109,8 +114,8 @@ const PromoCode = ({ cruiseId, ages, services, onPromoApplied }) => {
         </div>
       )}
 
-      <p style={{ fontSize: '11px', color: '#475569', marginTop: '8px' }}>
-        Try: SUMMER10 · FIRST150 · CREW25
+      <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>
+        Available promo codes: <code style={{ color: '#06b6d4' }}>SUMMER10</code> (10%) · <code style={{ color: '#06b6d4' }}>FIRST150</code> (₹150) · <code style={{ color: '#06b6d4' }}>CREW25</code> (25%)
       </p>
     </div>
   );
