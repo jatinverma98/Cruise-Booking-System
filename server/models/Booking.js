@@ -36,6 +36,15 @@ const pricingSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const promoSnapshotSchema = new mongoose.Schema(
+  {
+    code: { type: String },
+    type: { type: String },
+    value: { type: Number },
+  },
+  { _id: false }
+);
+
 /**
  * pricingSnapshot stores the exact rates used at booking time.
  * This ensures historical bookings are not affected by future price changes.
@@ -60,9 +69,8 @@ const pricingSnapshotSchema = new mongoose.Schema(
     },
     taxRate: { type: Number, required: true },
     promoSnapshot: {
-      code: String,
-      type: String,
-      value: Number,
+      type: promoSnapshotSchema,
+      default: null,
     },
   },
   { _id: false }
