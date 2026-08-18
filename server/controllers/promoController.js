@@ -18,7 +18,7 @@ const Cruise = require('../models/Cruise');
  */
 const validatePromo = async (req, res, next) => {
   try {
-    const { code, customerId, cruiseId, ages, services = {} } = req.body;
+    const { code, customerId, cruiseId, ages, services = {}, subtotal: explicitSubtotal, bookingAmount } = req.body;
 
     if (!code) {
       return res.status(400).json({
@@ -34,7 +34,7 @@ const validatePromo = async (req, res, next) => {
       });
     }
 
-    let subtotal = 0;
+    let subtotal = explicitSubtotal !== undefined ? explicitSubtotal : (bookingAmount !== undefined ? bookingAmount : 0);
 
     // Calculate subtotal if cruise info is provided (for minimum spend check)
     if (cruiseId && Array.isArray(ages) && ages.length > 0) {

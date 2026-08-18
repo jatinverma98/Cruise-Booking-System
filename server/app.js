@@ -6,6 +6,7 @@ const cruiseRoutes = require('./routes/cruiseRoutes');
 const pricingRoutes = require('./routes/pricingRoutes');
 const promoRoutes = require('./routes/promoRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -24,6 +25,7 @@ app.use('/api/cruises', cruiseRoutes);
 app.use('/api/pricing', pricingRoutes);
 app.use('/api/promos', promoRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/services', serviceRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

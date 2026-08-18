@@ -18,6 +18,7 @@ const mongoose = require('mongoose');
 const Cruise = require('../models/Cruise');
 const PromoCode = require('../models/PromoCode');
 const PricingRule = require('../models/PricingRule');
+const Service = require('../models/Service');
 
 const cruises = [
   {
@@ -128,6 +129,36 @@ const defaultPricingRule = {
   },
 };
 
+const servicesList = [
+  {
+    key: 'insurance',
+    name: 'Travel Insurance',
+    description: 'Comprehensive medical and trip cancellation coverage for your voyage',
+    price: 6700,
+    pricingUnit: 'per_passenger',
+    icon: '🛡️',
+    isActive: true,
+  },
+  {
+    key: 'wifi',
+    name: 'Wi-Fi Package',
+    description: 'High-speed satellite internet connection throughout your journey',
+    price: 1260,
+    pricingUnit: 'per_passenger_per_night',
+    icon: '📶',
+    isActive: true,
+  },
+  {
+    key: 'shoreExcursion',
+    name: 'Shore Excursion',
+    description: 'Guided premium tours and cultural excursions at destination ports',
+    price: 10000,
+    pricingUnit: 'per_passenger',
+    icon: '🏔️',
+    isActive: true,
+  },
+];
+
 const seed = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
@@ -137,7 +168,8 @@ const seed = async () => {
     await Cruise.deleteMany({});
     await PromoCode.deleteMany({});
     await PricingRule.deleteMany({});
-    console.log('🗑️  Cleared existing cruises, promo codes, and pricing rules');
+    await Service.deleteMany({});
+    console.log('🗑️  Cleared existing cruises, promo codes, pricing rules, and services');
 
     // Insert cruises
     const insertedCruises = await Cruise.insertMany(cruises);
@@ -151,6 +183,13 @@ const seed = async () => {
     console.log(`🏷️  Seeded ${insertedPromos.length} promo codes:`);
     insertedPromos.forEach((p) =>
       console.log(`   - ${p.code} (${p.type}: ${p.value}${p.type === 'percentage' ? '%' : '$'})`)
+    );
+
+    // Insert services
+    const insertedServices = await Service.insertMany(servicesList);
+    console.log(`✨ Seeded ${insertedServices.length} optional services:`);
+    insertedServices.forEach((s) =>
+      console.log(`   - ${s.name} (${s.key}): ₹${s.price.toLocaleString('en-IN')} (${s.pricingUnit})`)
     );
 
     // Insert pricing rule
