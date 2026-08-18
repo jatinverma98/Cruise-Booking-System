@@ -1,162 +1,338 @@
 import { Link } from 'react-router-dom';
 import { formatINRCompact } from '../utils/currency';
 
-/**
- * Real destination images from Unsplash (free, no auth required).
- * ?auto=format&fit=crop ensures consistent sizing.
- */
 const DESTINATION_IMAGES = {
   Caribbean:
-    'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=1200&q=80',
   Mediterranean:
-    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
   Alaska:
-    'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1200&q=80',
   'Northern Europe':
-    'https://images.unsplash.com/photo-1513519245088-0e12902e35ca?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1513519245088-0e12902e35ca?auto=format&fit=crop&w=1200&q=80',
   Bahamas:
-    'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=1200&q=80',
 };
 
 const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1599640842225-85d111c60e6b?auto=format&fit=crop&w=600&q=80';
+  'https://images.unsplash.com/photo-1599640842225-85d111c60e6b?auto=format&fit=crop&w=1200&q=80';
 
-const CruiseCard = ({ cruise }) => {
-  // `available` is computed SERVER-SIDE — the backend is the source of truth.
-  // Do NOT recompute this from capacityLeft on the frontend.
-  const isSoldOut = !cruise.available;
-  const isLimited = cruise.available && cruise.capacityLeft <= 4;
-  const image = DESTINATION_IMAGES[cruise.destination] || DEFAULT_IMAGE;
+const CruiseCard = ({ cruise, isFeatured = false }) => {
+  const { _id, cruiseLine, ship, destination, nights, adultFare, capacityLeft, available } = cruise;
+  const isSoldOut = !available || capacityLeft === 0;
+  const isLowCapacity = !isSoldOut && capacityLeft <= 4;
+  const imageUrl = DESTINATION_IMAGES[destination] || DEFAULT_IMAGE;
 
-  return (
-    <div
-      className="glass-card animate-fade-in-up"
-      style={{
-        overflow: 'hidden',
-        transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-        cursor: isSoldOut ? 'not-allowed' : 'pointer',
-      }}
-      onMouseEnter={(e) => {
-        if (!isSoldOut) {
-          e.currentTarget.style.transform = 'translateY(-4px)';
-          e.currentTarget.style.boxShadow = '0 20px 50px rgba(8,145,178,0.2)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = 'none';
-      }}
-    >
-      {/* Hero Image */}
+  if (isFeatured) {
+    return (
       <div
+        className="luxury-card image-zoom-container"
         style={{
-          height: '180px',
-          position: 'relative',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          borderRadius: '12px',
+          border: '1px solid rgba(220, 229, 232, 0.15)',
+          backgroundColor: '#0D2633',
           overflow: 'hidden',
+          marginBottom: '32px',
         }}
       >
+        {/* Large Featured Image */}
+        <div style={{ position: 'relative', minHeight: '380px', overflow: 'hidden' }}>
+          <img
+            src={imageUrl}
+            alt={`${ship} — ${destination}`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              filter: 'brightness(0.85)',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: '20px',
+              left: '20px',
+            }}
+          >
+            <span
+              style={{
+                background: 'rgba(7, 25, 35, 0.85)',
+                backdropFilter: 'blur(8px)',
+                padding: '6px 14px',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.18em',
+                color: '#e2b97f',
+                textTransform: 'uppercase',
+                borderRadius: '2px',
+                border: '1px solid rgba(226, 185, 127, 0.3)',
+              }}
+            >
+              ★ FEATURED FLAGSHIP VOYAGE
+            </span>
+          </div>
+        </div>
+
+        {/* Featured Content Info */}
+        <div
+          style={{
+            padding: '48px 40px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.22em',
+                color: '#38bdf8',
+                textTransform: 'uppercase',
+                marginBottom: '8px',
+              }}
+            >
+              {cruiseLine}
+            </div>
+            <h3
+              style={{
+                fontFamily: "'Cinzel', serif",
+                fontSize: 'clamp(1.8rem, 3vw, 2.4rem)',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                color: '#FFFFFF',
+                textTransform: 'uppercase',
+                marginBottom: '12px',
+              }}
+            >
+              {ship}
+            </h3>
+            <div
+              style={{
+                display: 'flex',
+                gap: '16px',
+                fontSize: '13px',
+                color: '#DCE5E8',
+                letterSpacing: '0.08em',
+                marginBottom: '24px',
+                textTransform: 'uppercase',
+              }}
+            >
+              <span>📍 {destination}</span>
+              <span>•</span>
+              <span>🌙 {nights} Nights</span>
+            </div>
+
+            <p
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: '1.15rem',
+                lineHeight: 1.6,
+                color: '#DCE5E8',
+                marginBottom: '32px',
+                opacity: 0.85,
+              }}
+            >
+              Immerse yourself in unrivaled luxury with spacious suites, ocean-view fine dining,
+              and bespoke shore excursions curated exclusively for Odysseus guests.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '20px',
+              paddingTop: '24px',
+              borderTop: '1px solid rgba(220, 229, 232, 0.1)',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '11px', color: '#526f7d', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                FROM
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Cinzel', serif",
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                }}
+              >
+                {formatINRCompact(adultFare)}
+                <span style={{ fontSize: '12px', color: '#526f7d', fontFamily: 'sans-serif', fontWeight: 400, marginLeft: '6px' }}>
+                  / adult
+                </span>
+              </div>
+              <div style={{ marginTop: '6px' }}>
+                {isSoldOut ? (
+                  <span className="luxury-badge luxury-badge-sold-out">SOLD OUT</span>
+                ) : isLowCapacity ? (
+                  <span className="luxury-badge luxury-badge-low">ONLY {capacityLeft} SEATS LEFT</span>
+                ) : (
+                  <span className="luxury-badge luxury-badge-available">{capacityLeft} SEATS AVAILABLE</span>
+                )}
+              </div>
+            </div>
+
+            <Link
+              to={`/cruises/${_id}`}
+              className={isSoldOut ? 'btn-luxury-ghost' : 'btn-luxury-primary'}
+              style={{
+                minWidth: '180px',
+                opacity: isSoldOut ? 0.6 : 1,
+              }}
+            >
+              {isSoldOut ? 'View Details' : 'Explore Voyage →'}
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Standard Editorial Card
+  return (
+    <div
+      className="luxury-card image-zoom-container"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: '8px',
+        border: '1px solid rgba(220, 229, 232, 0.12)',
+        backgroundColor: '#0D2633',
+        height: '100%',
+      }}
+    >
+      {/* Image with status badge */}
+      <div style={{ position: 'relative', height: '240px', overflow: 'hidden' }}>
         <img
-          src={image}
-          alt={`${cruise.destination} cruise`}
+          src={imageUrl}
+          alt={`${ship} — ${destination}`}
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            filter: isSoldOut ? 'grayscale(0.7) brightness(0.5)' : 'brightness(0.8)',
-            transition: 'transform 0.4s ease',
+            filter: isSoldOut ? 'grayscale(0.6) brightness(0.6)' : 'brightness(0.9)',
           }}
-          onMouseEnter={(e) => { if (!isSoldOut) e.currentTarget.style.transform = 'scale(1.05)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
         />
-        {/* Gradient overlay for text readability */}
         <div
           style={{
             position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(to top, rgba(10,22,40,0.85) 0%, transparent 60%)',
-          }}
-        />
-
-        {/* Cruise Line label on image */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '10px',
-            left: '14px',
-            fontSize: '11px',
-            color: '#67e8f9',
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+            top: '16px',
+            right: '16px',
           }}
         >
-          {cruise.cruiseLine}
+          {isSoldOut ? (
+            <span className="luxury-badge luxury-badge-sold-out">SOLD OUT</span>
+          ) : isLowCapacity ? (
+            <span className="luxury-badge luxury-badge-low">ONLY {capacityLeft} SEATS LEFT</span>
+          ) : (
+            <span className="luxury-badge luxury-badge-available">{capacityLeft} AVAILABLE</span>
+          )}
         </div>
-
-        {/* Availability badge */}
-        {isSoldOut && (
-          <div
-            style={{
-              position: 'absolute', top: '12px', right: '12px',
-              background: 'rgba(239,68,68,0.92)', color: '#fff',
-              padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
-              letterSpacing: '0.05em', backdropFilter: 'blur(4px)',
-            }}
-          >
-            SOLD OUT
-          </div>
-        )}
-        {isLimited && (
-          <div
-            style={{
-              position: 'absolute', top: '12px', right: '12px',
-              background: 'rgba(245,158,11,0.92)', color: '#0a1628',
-              padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
-              backdropFilter: 'blur(4px)',
-            }}
-          >
-            {cruise.capacityLeft} LEFT
-          </div>
-        )}
       </div>
 
-      {/* Card Content */}
-      <div style={{ padding: '18px 20px 20px' }}>
-        <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#f1f5f9', marginBottom: '10px', lineHeight: 1.3 }}>
-          {cruise.ship}
-        </h3>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-          <span className="badge badge-teal">📍 {cruise.destination}</span>
-          <span className="badge badge-gold">🌙 {cruise.nights} nights</span>
+      {/* Card Body */}
+      <div
+        style={{
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          flex: 1,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.2em',
+              color: '#38bdf8',
+              textTransform: 'uppercase',
+              marginBottom: '6px',
+            }}
+          >
+            {cruiseLine}
+          </div>
+          <h4
+            style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              color: '#FFFFFF',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              marginBottom: '10px',
+            }}
+          >
+            {ship}
+          </h4>
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+              fontSize: '12px',
+              color: '#DCE5E8',
+              letterSpacing: '0.06em',
+              marginBottom: '20px',
+              textTransform: 'uppercase',
+            }}
+          >
+            <span>📍 {destination}</span>
+            <span>•</span>
+            <span>🌙 {nights} Nights</span>
+          </div>
         </div>
 
         <div
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingTop: '16px',
+            borderTop: '1px solid rgba(220, 229, 232, 0.08)',
           }}
         >
           <div>
-            <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>from</div>
-            <div style={{ fontSize: '22px', fontWeight: 800, color: '#f1f5f9' }}>
-              {formatINRCompact(cruise.adultFare)}
+            <div style={{ fontSize: '10px', color: '#526f7d', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              FROM
             </div>
-            <div style={{ fontSize: '11px', color: '#64748b' }}>per adult</div>
+            <div
+              style={{
+                fontFamily: "'Cinzel', serif",
+                fontSize: '20px',
+                fontWeight: 700,
+                color: '#FFFFFF',
+              }}
+            >
+              {formatINRCompact(adultFare)}
+            </div>
           </div>
 
-          {!isSoldOut ? (
-            <Link to={`/cruises/${cruise._id}`} style={{ textDecoration: 'none' }}>
-              <button className="btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>
-                Book Now →
-              </button>
-            </Link>
-          ) : (
-            <button className="btn-primary" disabled style={{ padding: '10px 20px', fontSize: '14px' }}>
-              Sold Out
-            </button>
-          )}
+          <Link
+            to={`/cruises/${_id}`}
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: isSoldOut ? '#526f7d' : '#FFFFFF',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'color 200ms',
+            }}
+          >
+            {isSoldOut ? 'View Details →' : 'Explore →'}
+          </Link>
         </div>
       </div>
     </div>

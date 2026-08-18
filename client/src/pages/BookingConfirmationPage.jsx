@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import BookingSummary from '../components/BookingSummary';
 import LoadingState from '../components/LoadingState';
 import ErrorMessage from '../components/ErrorMessage';
+import Footer from '../components/Footer';
 import { fetchBookingByReference } from '../services/api';
 
 const BookingConfirmationPage = () => {
@@ -13,7 +14,7 @@ const BookingConfirmationPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // "Find a booking" lookup form
+  // Search reference state
   const [searchRef, setSearchRef] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState(null);
@@ -51,111 +52,206 @@ const BookingConfirmationPage = () => {
     }
   };
 
-  // No reference param — show search form
+  // No reference param — Show "Find Booking" Lookup Card
   if (!reference) {
     return (
-      <main style={{ maxWidth: '600px', margin: '80px auto', padding: '0 24px' }}>
-        <div className="glass-card" style={{ padding: '40px', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', color: '#f1f5f9', marginBottom: '8px' }}>
-            Find Your Booking
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '32px' }}>
-            Enter your booking reference to view your confirmed booking.
-          </p>
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px' }}>
-            <input
-              id="search-reference-input"
-              type="text"
-              placeholder="e.g. ODY-20260818-A7F42C"
-              value={searchRef}
-              onChange={(e) => setSearchRef(e.target.value.toUpperCase())}
-              className="input-field"
-              style={{ flex: 1, letterSpacing: '0.05em' }}
-            />
-            <button
-              id="search-booking-btn"
-              type="submit"
-              className="btn-primary"
-              disabled={searching || !searchRef.trim()}
-              style={{ padding: '10px 20px', whiteSpace: 'nowrap' }}
+      <div style={{ backgroundColor: '#071923', minHeight: '100vh', paddingTop: '120px' }}>
+        <main style={{ maxWidth: '640px', margin: '40px auto 100px', padding: '0 24px' }}>
+          <div
+            className="luxury-card"
+            style={{
+              padding: '48px 36px',
+              textAlign: 'center',
+              backgroundColor: '#0D2633',
+              borderRadius: '12px',
+            }}
+          >
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚓</div>
+            <h1
+              style={{
+                fontFamily: "'Cinzel', serif",
+                fontSize: '24px',
+                fontWeight: 700,
+                color: '#FFFFFF',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                marginBottom: '12px',
+              }}
             >
-              {searching ? '...' : 'Find'}
-            </button>
-          </form>
-          {searchError && (
-            <div style={{ marginTop: '16px', padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', color: '#f87171', fontSize: '13px' }}>
-              {searchError}
+              FIND YOUR VOYAGE
+            </h1>
+            <p style={{ color: '#DCE5E8', fontSize: '14px', marginBottom: '32px', opacity: 0.85 }}>
+              Enter your official Odysseus booking reference (e.g. ODY-20260818-A7F42C) to view
+              your confirmed itinerary.
+            </p>
+
+            <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px' }}>
+              <input
+                id="search-reference-input"
+                type="text"
+                placeholder="e.g. ODY-20260818-A7F42C"
+                value={searchRef}
+                onChange={(e) => setSearchRef(e.target.value.toUpperCase())}
+                className="luxury-input"
+                style={{ flex: 1, letterSpacing: '0.08em', textAlign: 'center' }}
+              />
+              <button
+                id="search-booking-btn"
+                type="submit"
+                className="btn-luxury-primary"
+                disabled={searching || !searchRef.trim()}
+                style={{ padding: '12px 24px', whiteSpace: 'nowrap' }}
+              >
+                {searching ? '...' : 'Lookup'}
+              </button>
+            </form>
+
+            {searchError && (
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '10px 14px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '4px',
+                  color: '#f87171',
+                  fontSize: '13px',
+                }}
+              >
+                ⚠️ {searchError}
+              </div>
+            )}
+
+            <div style={{ marginTop: '32px' }}>
+              <Link
+                to="/#featured-cruises"
+                style={{
+                  color: '#38bdf8',
+                  fontSize: '12px',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                }}
+              >
+                ← Browse Available Voyages
+              </Link>
             </div>
-          )}
-          <div style={{ marginTop: '24px' }}>
-            <Link to="/" style={{ color: '#06b6d4', fontSize: '14px', textDecoration: 'none' }}>
-              ← Browse cruises
-            </Link>
           </div>
-        </div>
-      </main>
+        </main>
+        <Footer />
+      </div>
     );
   }
 
-  if (loading) return <LoadingState message="Retrieving your booking..." />;
+  if (loading) return <LoadingState message="Retrieving your confirmed reservation..." />;
 
   if (error) {
     return (
-      <main style={{ maxWidth: '600px', margin: '60px auto', padding: '0 24px' }}>
-        <ErrorMessage message={error} />
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-          <Link to="/" style={{ color: '#06b6d4', fontSize: '14px', textDecoration: 'none' }}>
-            ← Browse cruises
-          </Link>
-        </div>
-      </main>
+      <div style={{ backgroundColor: '#071923', minHeight: '100vh', paddingTop: '120px' }}>
+        <main style={{ maxWidth: '640px', margin: '40px auto 100px', padding: '0 24px' }}>
+          <ErrorMessage message={error} />
+          <div style={{ textAlign: 'center', marginTop: '24px' }}>
+            <Link
+              to="/#featured-cruises"
+              style={{
+                color: '#38bdf8',
+                fontSize: '12px',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+              }}
+            >
+              ← Return to All Voyages
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
     );
   }
 
   return (
-    <main style={{ maxWidth: '760px', margin: '0 auto', padding: '40px 24px' }}>
-      <title>Booking {reference} — Odysseus Cruises</title>
+    <div style={{ backgroundColor: '#071923', minHeight: '100vh', paddingTop: '100px' }}>
+      <title>{`Voyage ${reference} Confirmed — Odysseus Cruises`}</title>
 
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', color: '#f1f5f9', marginBottom: '8px' }}>
-          Booking Confirmed
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '15px' }}>
-          Your adventure awaits. Here are your booking details.
-        </p>
-      </div>
+      <main style={{ maxWidth: '860px', margin: '0 auto 80px', padding: '0 24px' }}>
+        {/* Confirmed Header */}
+        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+          <span
+            style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.35em',
+              color: '#38bdf8',
+              textTransform: 'uppercase',
+              display: 'block',
+              marginBottom: '12px',
+            }}
+          >
+            VOYAGE CONFIRMATION
+          </span>
+          <h1
+            style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: 'clamp(2.2rem, 5vw, 3.4rem)',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              color: '#FFFFFF',
+              textTransform: 'uppercase',
+              marginBottom: '12px',
+            }}
+          >
+            YOUR JOURNEY
+            <br />
+            IS CONFIRMED
+          </h1>
+          <p
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '1.25rem',
+              color: '#DCE5E8',
+              opacity: 0.9,
+            }}
+          >
+            Thank you for choosing Odysseus. Your reservation is permanently locked in.
+          </p>
+        </div>
 
-      <BookingSummary booking={booking} />
+        {/* Booking Summary Manifest */}
+        <BookingSummary booking={booking} />
 
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: '12px', marginTop: '32px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button
-          id="print-booking-btn"
-          onClick={() => window.print()}
+        {/* Action Controls */}
+        <div
           style={{
-            padding: '12px 24px',
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: '10px',
-            color: '#94a3b8',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: 500,
+            display: 'flex',
+            gap: '16px',
+            marginTop: '40px',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
           }}
         >
-          🖨️ Print Booking
-        </button>
-        <button
-          id="browse-more-btn"
-          className="btn-primary"
-          onClick={() => navigate('/')}
-        >
-          Browse More Cruises
-        </button>
-      </div>
-    </main>
+          <button
+            id="print-booking-btn"
+            onClick={() => window.print()}
+            className="btn-luxury-ghost"
+            style={{ minWidth: '180px' }}
+          >
+            🖨️ Print Itinerary
+          </button>
+          <button
+            id="browse-more-btn"
+            onClick={() => navigate('/#featured-cruises')}
+            className="btn-luxury-primary"
+            style={{ minWidth: '220px' }}
+          >
+            Explore More Voyages
+          </button>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   );
 };
 

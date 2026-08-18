@@ -21,14 +21,21 @@ export const getQuote = (payload) =>
 // ── Promo API ────────────────────────────────────────────────────────────────
 
 export const validatePromo = (payload) =>
-  api.post('/promos/validate', payload).then((r) => r.data.data);
+  api.post('/promos/validate', payload).then((r) => r.data.data || r.data);
+
+export const validatePromoCode = validatePromo;
 
 // ── Booking APIs ─────────────────────────────────────────────────────────────
 
 export const createBooking = (payload) =>
-  api.post('/bookings', payload).then((r) => r.data.data);
+  api.post('/bookings', payload).then((r) => r.data.data || r.data);
 
 export const fetchBookingByReference = (reference) =>
   api.get(`/bookings/${reference}`).then((r) => r.data.data);
+
+// ── Services API ─────────────────────────────────────────────────────────────
+
+export const fetchServices = () =>
+  api.get('/services').then((r) => r.data.data);
 
 export default api;

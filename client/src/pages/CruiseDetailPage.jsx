@@ -1,29 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import PassengerForm from '../components/PassengerForm';
 import ServiceCard from '../components/ServiceCard';
 import PromoCode from '../components/PromoCode';
 import PriceBreakdown from '../components/PriceBreakdown';
 import LoadingState from '../components/LoadingState';
 import ErrorMessage from '../components/ErrorMessage';
+import Footer from '../components/Footer';
 import { fetchCruiseById, getQuote, createBooking } from '../services/api';
 import { formatINRCompact } from '../utils/currency';
 
 const DESTINATION_IMAGES = {
   Caribbean:
-    'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=1800&q=85',
   Mediterranean:
-    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85',
   Alaska:
-    'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1800&q=85',
   'Northern Europe':
-    'https://images.unsplash.com/photo-1513519245088-0e12902e35ca?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1513519245088-0e12902e35ca?auto=format&fit=crop&w=1800&q=85',
   Bahamas:
-    'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?auto=format&fit=crop&w=1800&q=85',
 };
 
 const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1599640842225-85d111c60e6b?auto=format&fit=crop&w=1200&q=80';
+  'https://images.unsplash.com/photo-1599640842225-85d111c60e6b?auto=format&fit=crop&w=1800&q=85';
 
 const CruiseDetailPage = () => {
   const { id } = useParams();
@@ -94,11 +95,11 @@ const CruiseDetailPage = () => {
 
   const handleConfirmBooking = async () => {
     if (!customerName.trim() || !customerEmail.trim()) {
-      setBookingError('Please enter your name and email address.');
+      setBookingError('Please enter your full name and email address.');
       return;
     }
     if (!quote) {
-      setBookingError('Please get a price quote first.');
+      setBookingError('Please configure your travel party to get a price quote first.');
       return;
     }
 
@@ -121,227 +122,456 @@ const CruiseDetailPage = () => {
       const msg = err.response?.data?.message || 'Booking failed. Please try again.';
       setBookingError(msg);
       if (err.response?.data?.reason === 'QUOTE_EXPIRED' || err.response?.data?.code === 'QUOTE_EXPIRED') {
-        fetchQuote(); // Automatically fetch fresh quote
+        fetchQuote();
       }
     } finally {
       setBookingLoading(false);
     }
   };
 
-  if (cruiseLoading) return <LoadingState message="Loading cruise details..." />;
+  if (cruiseLoading) return <LoadingState message="Loading voyage details..." />;
   if (cruiseError) return <ErrorMessage message={cruiseError} />;
   if (!cruise) return null;
 
-  const isSoldOut = !cruise.available;
-  const image = DESTINATION_IMAGES[cruise.destination] || DEFAULT_IMAGE;
+  const isSoldOut = !cruise.available || cruise.capacityLeft === 0;
+  const isLowCapacity = !isSoldOut && cruise.capacityLeft <= 4;
+  const imageUrl = DESTINATION_IMAGES[cruise.destination] || DEFAULT_IMAGE;
 
   return (
-    <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 24px' }}>
-      {/* Back */}
-      <button
-        onClick={() => navigate('/')}
-        style={{
-          background: 'none', border: 'none', color: '#06b6d4', cursor: 'pointer',
-          fontSize: '14px', fontWeight: 500, marginBottom: '24px', padding: 0,
-          display: 'flex', alignItems: 'center', gap: '6px',
-        }}
-      >
-        ← Back to all cruises
-      </button>
+    <div style={{ backgroundColor: '#071923', minHeight: '100vh', paddingTop: '80px' }}>
+      <title>{`${cruise.ship} — ${cruise.destination} | Odysseus Cruises`}</title>
 
-      {/* Cruise Header */}
-      <div
-        className="glass-card"
+      {/* Cinematic Hero Banner */}
+      <section
         style={{
-          padding: '32px',
-          marginBottom: '32px',
-          background: 'linear-gradient(135deg, rgba(12,74,110,0.5), rgba(10,22,40,0.8))',
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: '28px',
-          alignItems: 'center',
-          flexWrap: 'wrap',
           position: 'relative',
+          height: '520px',
+          display: 'flex',
+          alignItems: 'flex-end',
+          padding: '0 32px 64px',
           overflow: 'hidden',
-          padding: 0,
         }}
       >
-        {/* Background image */}
         <img
-          src={image}
-          alt={cruise.destination}
+          src={imageUrl}
+          alt={`${cruise.ship} — ${cruise.destination}`}
           style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%',
-            objectFit: 'cover', filter: 'brightness(0.35)',
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: 'brightness(0.38)',
           }}
         />
-        <div style={{ position: 'relative', zIndex: 1, padding: '32px 32px 32px 32px', flex: 1, minWidth: '200px' }}>
-          <div style={{ fontSize: '12px', color: '#06b6d4', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'linear-gradient(to top, #071923 0%, rgba(7, 25, 35, 0.4) 60%, rgba(7, 25, 35, 0.8) 100%)',
+          }}
+        />
+
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 10,
+            maxWidth: '1280px',
+            margin: '0 auto',
+            width: '100%',
+          }}
+        >
+          <Link
+            to="/#featured-cruises"
+            style={{
+              color: '#38bdf8',
+              fontSize: '12px',
+              fontWeight: 600,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginBottom: '20px',
+            }}
+          >
+            ← Back to all voyages
+          </Link>
+
+          <div
+            style={{
+              fontSize: '12px',
+              fontWeight: 700,
+              letterSpacing: '0.3em',
+              color: '#DCE5E8',
+              textTransform: 'uppercase',
+              marginBottom: '8px',
+            }}
+          >
             {cruise.cruiseLine}
           </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', fontWeight: 700, color: '#f1f5f9', marginBottom: '12px' }}>
+
+          <h1
+            style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: 'clamp(2.4rem, 5vw, 3.8rem)',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              color: '#FFFFFF',
+              textTransform: 'uppercase',
+              marginBottom: '16px',
+            }}
+          >
             {cruise.ship}
           </h1>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <span className="badge badge-teal">📍 {cruise.destination}</span>
-            <span className="badge badge-gold">🌙 {cruise.nights} nights</span>
-            {isSoldOut
-              ? <span className="badge badge-red">🚫 Sold Out</span>
-              : cruise.capacityLeft <= 4
-              ? <span className="badge badge-gold">⚡ Only {cruise.capacityLeft} spots left</span>
-              : <span className="badge badge-green">✅ Available</span>
-            }
+
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '14px', color: '#DCE5E8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              📍 {cruise.destination}
+            </span>
+            <span style={{ color: '#526f7d' }}>•</span>
+            <span style={{ fontSize: '14px', color: '#DCE5E8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              🌙 {cruise.nights} Nights
+            </span>
+            <span style={{ color: '#526f7d' }}>•</span>
+            <span style={{ fontSize: '14px', color: '#FFFFFF', fontWeight: 600 }}>
+              From {formatINRCompact(cruise.adultFare)} / adult
+            </span>
           </div>
         </div>
-        <div style={{ position: 'relative', zIndex: 1, textAlign: 'right', padding: '32px 32px 32px 0' }}>
-          <div style={{ fontSize: '11px', color: '#94a3b8' }}>from</div>
-          <div style={{ fontSize: '32px', fontWeight: 900, color: '#f1f5f9' }}>{formatINRCompact(cruise.adultFare)}</div>
-          <div style={{ fontSize: '12px', color: '#94a3b8' }}>per adult</div>
-        </div>
-      </div>
+      </section>
 
-      {isSoldOut ? (
-        <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>😢</div>
-          <h2 style={{ color: '#f87171', fontSize: '22px', marginBottom: '8px' }}>This Cruise is Sold Out</h2>
-          <p style={{ color: '#64748b', marginBottom: '24px' }}>All spots have been taken. Browse other available cruises.</p>
-          <button className="btn-primary" onClick={() => navigate('/')}>Browse Other Cruises</button>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '28px', alignItems: 'start' }}>
-          {/* Left Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-
-            {/* Passengers */}
-            <div className="glass-card" style={{ padding: '24px' }}>
-              <PassengerForm ages={ages} onAgesChange={setAges} />
+      {/* Horizontal Voyage Stats Bar */}
+      <section
+        style={{
+          backgroundColor: '#0D2633',
+          borderTop: '1px solid rgba(220, 229, 232, 0.1)',
+          borderBottom: '1px solid rgba(220, 229, 232, 0.1)',
+          padding: '24px 32px',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '1280px',
+            margin: '0 auto',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '24px',
+            textAlign: 'center',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '11px', color: '#526f7d', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              DURATION
             </div>
-
-            {/* Services */}
-            <div className="glass-card" style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
-                Optional Services
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <ServiceCard
-                  id="service-insurance"
-                  icon="🛡️"
-                  title="Travel Insurance"
-                  description="Comprehensive coverage for your voyage"
-                  price="₹6,700/passenger"
-                  checked={services.insurance}
-                  onChange={(v) => setServices((s) => ({ ...s, insurance: v }))}
-                />
-                <ServiceCard
-                  id="service-wifi"
-                  icon="📶"
-                  title="Wi-Fi Package"
-                  description="Stay connected throughout your journey"
-                  price={`₹1,260/passenger/night`}
-                  checked={services.wifi}
-                  onChange={(v) => setServices((s) => ({ ...s, wifi: v }))}
-                />
-                <ServiceCard
-                  id="service-shore"
-                  icon="🏔️"
-                  title="Shore Excursion"
-                  description="Guided tours at port destinations"
-                  price="₹10,000/passenger"
-                  checked={services.shoreExcursion}
-                  onChange={(v) => setServices((s) => ({ ...s, shoreExcursion: v }))}
-                />
-              </div>
-            </div>
-
-            {/* Promo Code */}
-            <div className="glass-card" style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
-                Promotional Code
-              </h3>
-              <PromoCode
-                cruiseId={cruise._id}
-                ages={ages.filter((a) => a !== '')}
-                services={services}
-                onPromoApplied={setAppliedPromo}
-              />
-            </div>
-
-            {/* Customer Details */}
-            <div className="glass-card" style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#f1f5f9', marginBottom: '4px' }}>
-                Your Details
-              </h3>
-              <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px' }}>
-                We'll use this to send your booking confirmation.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '6px', letterSpacing: '0.04em' }}>
-                    FULL NAME
-                  </label>
-                  <input
-                    id="customer-name"
-                    type="text"
-                    placeholder="John Smith"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '6px', letterSpacing: '0.04em' }}>
-                    EMAIL ADDRESS
-                  </label>
-                  <input
-                    id="customer-email"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    className="input-field"
-                  />
-                </div>
-              </div>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: '20px', fontWeight: 700, color: '#FFFFFF', marginTop: '4px' }}>
+              {cruise.nights} NIGHTS
             </div>
           </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#526f7d', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              REGION
+            </div>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: '20px', fontWeight: 700, color: '#FFFFFF', marginTop: '4px' }}>
+              {cruise.destination}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#526f7d', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              BASE ADULT FARE
+            </div>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: '20px', fontWeight: 700, color: '#FFFFFF', marginTop: '4px' }}>
+              {formatINRCompact(cruise.adultFare)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#526f7d', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              AVAILABILITY
+            </div>
+            <div style={{ marginTop: '4px' }}>
+              {isSoldOut ? (
+                <span className="luxury-badge luxury-badge-sold-out">SOLD OUT</span>
+              ) : isLowCapacity ? (
+                <span className="luxury-badge luxury-badge-low">ONLY {cruise.capacityLeft} SEATS LEFT</span>
+              ) : (
+                <span className="luxury-badge luxury-badge-available">{cruise.capacityLeft} SEATS AVAILABLE</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
 
-          {/* Right Column — Price & Confirm */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'sticky', top: '84px' }}>
-            <PriceBreakdown quote={quote} loading={quoteLoading} />
-
-            {bookingError && (
-              <div style={{
-                padding: '12px 16px',
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.25)',
-                borderRadius: '10px',
+      {/* Main Booking Content */}
+      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '64px 24px' }}>
+        {isSoldOut ? (
+          <div
+            className="luxury-card"
+            style={{
+              padding: '64px 32px',
+              textAlign: 'center',
+              backgroundColor: '#0D2633',
+              maxWidth: '600px',
+              margin: '0 auto',
+            }}
+          >
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚓</div>
+            <h2
+              style={{
+                fontFamily: "'Cinzel', serif",
+                fontSize: '24px',
+                fontWeight: 700,
                 color: '#f87171',
-                fontSize: '13px',
-                lineHeight: 1.5,
-              }}>
-                ⚠️ {bookingError}
-              </div>
-            )}
-
-            <button
-              id="confirm-booking-btn"
-              className="btn-gold"
-              onClick={handleConfirmBooking}
-              disabled={bookingLoading || !quote || !customerName.trim() || !customerEmail.trim()}
-              style={{ width: '100%', fontSize: '16px', padding: '16px' }}
+                letterSpacing: '0.08em',
+                marginBottom: '12px',
+              }}
             >
-              {bookingLoading ? '⏳ Processing...' : '✓ Confirm Booking'}
-            </button>
-
-            <p style={{ fontSize: '11px', color: '#475569', textAlign: 'center', lineHeight: 1.6 }}>
-              By confirming, your price is locked in permanently. 
-              You'll receive a unique booking reference.
+              VOYAGE SOLD OUT
+            </h2>
+            <p style={{ color: '#DCE5E8', fontSize: '14px', marginBottom: '28px', opacity: 0.8 }}>
+              All passenger capacity has been claimed for this departure. Explore alternative departures.
             </p>
+            <button onClick={() => navigate('/#featured-cruises')} className="btn-luxury-primary">
+              Browse Other Voyages
+            </button>
           </div>
-        </div>
-      )}
-    </main>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '40px',
+              alignItems: 'start',
+            }}
+          >
+            {/* Left Column: Form Sections */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+              {/* 1. Passenger Selection */}
+              <div
+                className="luxury-card"
+                style={{
+                  padding: '32px',
+                  backgroundColor: '#0D2633',
+                }}
+              >
+                <PassengerForm ages={ages} onAgesChange={setAges} />
+              </div>
+
+              {/* 2. Optional Services */}
+              <div
+                className="luxury-card"
+                style={{
+                  padding: '32px',
+                  backgroundColor: '#0D2633',
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "'Cinzel', serif",
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    color: '#FFFFFF',
+                    textTransform: 'uppercase',
+                    marginBottom: '8px',
+                  }}
+                >
+                  ENHANCE YOUR JOURNEY
+                </h3>
+                <p style={{ fontSize: '13px', color: '#DCE5E8', opacity: 0.8, marginBottom: '20px' }}>
+                  Select curated amenities to elevate your time on board and ashore.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <ServiceCard
+                    id="service-insurance"
+                    icon="🛡️"
+                    title="Travel Insurance"
+                    description="Comprehensive medical and cancellation coverage"
+                    price="₹6,700 / passenger"
+                    checked={services.insurance}
+                    onChange={(v) => setServices((s) => ({ ...s, insurance: v }))}
+                  />
+                  <ServiceCard
+                    id="service-wifi"
+                    icon="📶"
+                    title="Satellite Wi-Fi"
+                    description="Continuous high-speed sea connectivity"
+                    price={`₹1,260 / passenger / night`}
+                    checked={services.wifi}
+                    onChange={(v) => setServices((s) => ({ ...s, wifi: v }))}
+                  />
+                  <ServiceCard
+                    id="service-shore"
+                    icon="🏔️"
+                    title="Shore Excursions"
+                    description="Private guided port tours & cultural excursions"
+                    price="₹10,000 / passenger"
+                    checked={services.shoreExcursion}
+                    onChange={(v) => setServices((s) => ({ ...s, shoreExcursion: v }))}
+                  />
+                </div>
+              </div>
+
+              {/* 3. Promo Code */}
+              <div
+                className="luxury-card"
+                style={{
+                  padding: '32px',
+                  backgroundColor: '#0D2633',
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "'Cinzel', serif",
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    color: '#FFFFFF',
+                    textTransform: 'uppercase',
+                    marginBottom: '8px',
+                  }}
+                >
+                  PROMOTIONAL PRIVILEGE
+                </h3>
+                <p style={{ fontSize: '13px', color: '#DCE5E8', opacity: 0.8, marginBottom: '20px' }}>
+                  Have an exclusive invitation code or seasonal privilege?
+                </p>
+
+                <PromoCode
+                  cruiseId={cruise._id}
+                  ages={ages.filter((a) => a !== '')}
+                  services={services}
+                  onPromoApplied={setAppliedPromo}
+                />
+              </div>
+
+              {/* 4. Customer Contact Information */}
+              <div
+                className="luxury-card"
+                style={{
+                  padding: '32px',
+                  backgroundColor: '#0D2633',
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "'Cinzel', serif",
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    color: '#FFFFFF',
+                    textTransform: 'uppercase',
+                    marginBottom: '8px',
+                  }}
+                >
+                  LEAD TRAVELER DETAILS
+                </h3>
+                <p style={{ fontSize: '13px', color: '#DCE5E8', opacity: 0.8, marginBottom: '24px' }}>
+                  Your official voyage confirmation and unique reference will be issued to this email.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        letterSpacing: '0.12em',
+                        color: '#526f7d',
+                        textTransform: 'uppercase',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      FULL NAME
+                    </label>
+                    <input
+                      id="customer-name"
+                      type="text"
+                      placeholder="e.g. Captain Alexander Vance"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="luxury-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        letterSpacing: '0.12em',
+                        color: '#526f7d',
+                        textTransform: 'uppercase',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      EMAIL ADDRESS
+                    </label>
+                    <input
+                      id="customer-email"
+                      type="email"
+                      placeholder="e.g. alexander@vance.com"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      className="luxury-input"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Sticky Summary & Confirmation */}
+            <div style={{ position: 'sticky', top: '100px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <PriceBreakdown quote={quote} loading={quoteLoading} />
+
+              {bookingError && (
+                <div
+                  style={{
+                    padding: '14px 18px',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: '6px',
+                    color: '#f87171',
+                    fontSize: '13px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  ⚠️ {bookingError}
+                </div>
+              )}
+
+              <button
+                id="confirm-booking-btn"
+                onClick={handleConfirmBooking}
+                disabled={bookingLoading || !quote || !customerName.trim() || !customerEmail.trim()}
+                className="btn-luxury-gold"
+                style={{ width: '100%', padding: '16px 24px', fontSize: '14px' }}
+              >
+                {bookingLoading ? '⏳ Securing Voyage...' : '✓ Confirm Voyage Booking'}
+              </button>
+
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: '#526f7d',
+                  textAlign: 'center',
+                  lineHeight: 1.6,
+                }}
+              >
+                🔒 Guaranteed Locked-In Pricing. Upon confirmation, a permanent booking reference
+                will be generated.
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <Footer />
+    </div>
   );
 };
 

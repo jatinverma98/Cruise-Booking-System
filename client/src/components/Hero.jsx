@@ -1,67 +1,189 @@
-const Hero = () => (
-  <div
-    style={{
-      background: 'linear-gradient(160deg, #0c4a6e 0%, #0a1628 50%, #0f172a 100%)',
-      padding: '80px 24px 64px',
-      textAlign: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-    }}
-  >
-    {/* Background decoration */}
-    <div style={{
-      position: 'absolute', width: '600px', height: '600px', borderRadius: '50%',
-      background: 'radial-gradient(circle, rgba(8,145,178,0.12) 0%, transparent 70%)',
-      top: '-200px', left: '50%', transform: 'translateX(-50%)',
-      pointerEvents: 'none',
-    }} />
-    <div style={{
-      position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px',
-      background: 'linear-gradient(90deg, transparent, rgba(8,145,178,0.6), transparent)',
-    }} />
+import { Link } from 'react-router-dom';
 
-    <div style={{ position: 'relative', maxWidth: '700px', margin: '0 auto' }}>
-      <div className="badge badge-teal" style={{ marginBottom: '20px', fontSize: '12px' }}>
-        🚢 World-Class Cruise Experiences
-      </div>
+const Hero = () => {
+  const scrollToCruises = () => {
+    const el = document.getElementById('featured-cruises');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
 
-      <h1
+  return (
+    <section
+      style={{
+        position: 'relative',
+        height: '100vh',
+        minHeight: '680px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Background Cinematic Image */}
+      <img
+        src="https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=2400&q=85"
+        alt="Odysseus Luxury Ocean Voyage"
         style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-          fontWeight: 700,
-          color: '#f1f5f9',
-          lineHeight: 1.15,
-          marginBottom: '20px',
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center 40%',
+          filter: 'brightness(0.42)',
+          transform: 'scale(1.02)',
+        }}
+      />
+
+      {/* Atmospheric Radial & Gradient Overlays */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'radial-gradient(circle at center, rgba(7,25,35,0.2) 0%, rgba(7,25,35,0.7) 70%, rgba(7,25,35,0.95) 100%)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'linear-gradient(to bottom, rgba(7,25,35,0.5) 0%, transparent 40%, rgba(7,25,35,0.9) 100%)',
+        }}
+      />
+
+      {/* Hero Content */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          maxWidth: '1000px',
+          margin: '0 auto',
+          padding: '0 24px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        Set Sail on Your{' '}
-        <span style={{ color: '#06b6d4' }}>Dream Voyage</span>
-      </h1>
+        {/* Brand Tag */}
+        <div
+          style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: '12px',
+            fontWeight: 700,
+            letterSpacing: '0.45em',
+            color: '#DCE5E8',
+            textTransform: 'uppercase',
+            marginBottom: '20px',
+            opacity: 0.9,
+          }}
+        >
+          ODYSSEUS OCEANIC
+        </div>
 
-      <p style={{ fontSize: '17px', color: '#94a3b8', lineHeight: 1.7, maxWidth: '500px', margin: '0 auto 36px' }}>
-        Discover extraordinary destinations with world-class cruise lines. 
-        Book with confidence — transparent pricing, every time.
-      </p>
+        {/* Cinematic Large Heading */}
+        <h1
+          style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: 'clamp(2.4rem, 6.5vw, 4.5rem)',
+            fontWeight: 700,
+            lineHeight: 1.1,
+            letterSpacing: '0.12em',
+            color: '#FFFFFF',
+            textTransform: 'uppercase',
+            marginBottom: '24px',
+            textShadow: '0 4px 24px rgba(0, 0, 0, 0.6)',
+          }}
+        >
+          VOYAGES
+          <br />
+          BEYOND THE
+          <br />
+          ORDINARY
+        </h1>
 
-      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        {[
-          { icon: '🌍', label: '5 Destinations' },
-          { icon: '🚢', label: '5 Premium Ships' },
-          { icon: '⭐', label: 'Price Guarantee' },
-        ].map(({ icon, label }) => (
-          <div
-            key={label}
-            className="glass-card"
-            style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}
+        {/* Subtitle */}
+        <p
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 'clamp(1.15rem, 2vw, 1.45rem)',
+            fontStyle: 'italic',
+            lineHeight: 1.6,
+            color: '#F5F3EF',
+            maxWidth: '620px',
+            marginBottom: '40px',
+            opacity: 0.92,
+          }}
+        >
+          Explore curated journeys across the world's most breathtaking oceans,
+          where timeless luxury meets undiscovered horizons.
+        </p>
+
+        {/* CTAs */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '16px',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+          }}
+        >
+          <button
+            onClick={scrollToCruises}
+            className="btn-luxury-primary"
+            style={{ minWidth: '180px' }}
           >
-            <span style={{ fontSize: '18px' }}>{icon}</span>
-            <span style={{ fontSize: '14px', fontWeight: 500, color: '#cbd5e1' }}>{label}</span>
-          </div>
-        ))}
+            Explore Cruises
+          </button>
+          <a
+            href="#destinations"
+            className="btn-luxury-ghost"
+            style={{ minWidth: '180px' }}
+          >
+            Plan Your Journey
+          </a>
+        </div>
       </div>
-    </div>
-  </div>
-);
+
+      {/* Scroll Down Indicator */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '32px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px',
+          cursor: 'pointer',
+        }}
+        onClick={scrollToCruises}
+      >
+        <span
+          style={{
+            fontSize: '9px',
+            letterSpacing: '0.3em',
+            textTransform: 'uppercase',
+            color: '#DCE5E8',
+            opacity: 0.6,
+          }}
+        >
+          DISCOVER
+        </span>
+        <div
+          style={{
+            width: '1px',
+            height: '24px',
+            backgroundColor: 'rgba(220, 229, 232, 0.4)',
+            animation: 'pulse 2s infinite',
+          }}
+        />
+      </div>
+    </section>
+  );
+};
 
 export default Hero;

@@ -1,40 +1,47 @@
 import { useState } from 'react';
+import { validatePromoCode } from '../services/api';
 
 const PromoCode = ({ cruiseId, ages, services, onPromoApplied }) => {
   const [code, setCode] = useState('');
-  const [status, setStatus] = useState(null); // null | 'valid' | 'invalid'
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState(null); // { valid: bool, message: string, promo: object }
 
-  const handleApply = async () => {
+  const handleApply = async (e) => {
+    e.preventDefault();
     if (!code.trim()) return;
+
     setLoading(true);
     setStatus(null);
 
     try {
-      const response = await fetch('/api/promos/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code.trim(), cruiseId, ages, services }),
+      const res = await validatePromoCode({
+        code: code.trim().toUpperCase(),
+        cruiseId,
+        ages,
+        services,
       });
-      const data = await response.json();
-      const result = data.data || data;
 
-      if (result.valid && result.promo) {
-        setStatus('valid');
-        const discountText = result.promo.type === 'percentage'
-          ? `${result.promo.value}% discount`
-          : `₹${result.promo.value.toLocaleString('en-IN')} discount`;
-        setMessage(`✓ Code applied: ${result.promo.code} (${discountText})`);
-        onPromoApplied(result.promo);
+      if (res.valid) {
+        setStatus({
+          valid: true,
+          message: `${res.promo.code} applied — ${
+            res.promo.type === 'percentage' ? `${res.promo.value}% voyage discount` : `₹${res.promo.value} discount`
+          }`,
+          promo: res.promo,
+        });
+        onPromoApplied(res.promo);
       } else {
-        setStatus('invalid');
-        setMessage(result.message || 'Invalid promotional code.');
+        setStatus({
+          valid: false,
+          message: res.message || 'This promotional code is not applicable.',
+        });
         onPromoApplied(null);
       }
-    } catch {
-      setStatus('invalid');
-      setMessage('Failed to validate promo code. Please try again.');
+    } catch (err) {
+      setStatus({
+        valid: false,
+        message: err.response?.data?.message || 'Invalid promotional code.',
+      });
       onPromoApplied(null);
     } finally {
       setLoading(false);
@@ -44,79 +51,62 @@ const PromoCode = ({ cruiseId, ages, services, onPromoApplied }) => {
   const handleRemove = () => {
     setCode('');
     setStatus(null);
-    setMessage('');
     onPromoApplied(null);
   };
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: '10px' }}>
+      <form onSubmit={handleApply} style={{ display: 'flex', gap: '8px' }}>
         <input
           id="promo-code-input"
           type="text"
-          placeholder="Enter promo code (e.g. SUMMER10)"
+          placeholder="e.g. SUMMER10, CREW25"
           value={code}
-          onChange={(e) => {
-            setCode(e.target.value.toUpperCase());
-            if (status) { setStatus(null); setMessage(''); onPromoApplied(null); }
-          }}
-          className="input-field"
-          disabled={status === 'valid'}
-          style={{ textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          className="luxury-input"
+          style={{ flex: 1, letterSpacing: '0.08em' }}
+          disabled={loading || status?.valid}
         />
-        {status !== 'valid' ? (
+        {status?.valid ? (
           <button
-            id="promo-apply-btn"
-            type="button"
-            className="btn-primary"
-            onClick={handleApply}
-            disabled={loading || !code.trim()}
-            style={{ padding: '10px 18px', fontSize: '14px', whiteSpace: 'nowrap' }}
-          >
-            {loading ? '...' : 'Apply'}
-          </button>
-        ) : (
-          <button
-            id="promo-remove-btn"
+            id="remove-promo-btn"
             type="button"
             onClick={handleRemove}
-            style={{
-              padding: '10px 18px',
-              background: 'rgba(239,68,68,0.15)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: '10px',
-              color: '#f87171',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-            }}
+            className="btn-luxury-ghost"
+            style={{ padding: '10px 18px', fontSize: '11px' }}
           >
             Remove
           </button>
+        ) : (
+          <button
+            id="apply-promo-btn"
+            type="submit"
+            className="btn-luxury-primary"
+            disabled={loading || !code.trim()}
+            style={{ padding: '10px 22px', fontSize: '11px' }}
+          >
+            {loading ? '...' : 'Apply'}
+          </button>
         )}
-      </div>
+      </form>
 
-      {message && (
+      {/* Validation Message */}
+      {status && (
         <div
           style={{
-            marginTop: '10px',
-            padding: '10px 14px',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: 500,
-            background: status === 'valid' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-            border: `1px solid ${status === 'valid' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
-            color: status === 'valid' ? '#4ade80' : '#f87171',
+            marginTop: '12px',
+            fontSize: '12px',
+            letterSpacing: '0.04em',
+            color: status.valid ? '#4ade80' : '#f87171',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
-          {message}
+          <span>{status.valid ? '✓' : '⚠️'}</span>
+          <span>{status.message}</span>
         </div>
       )}
-
-      <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>
-        Available promo codes: <code style={{ color: '#06b6d4' }}>SUMMER10</code> (10%) · <code style={{ color: '#06b6d4' }}>FIRST150</code> (₹150) · <code style={{ color: '#06b6d4' }}>CREW25</code> (25%)
-      </p>
     </div>
   );
 };

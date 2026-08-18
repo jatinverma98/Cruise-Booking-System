@@ -5,12 +5,23 @@ const LoadingState = ({ message = 'Loading...' }) => (
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '80px 20px',
+      padding: '120px 24px',
       gap: '16px',
+      backgroundColor: '#071923',
     }}
   >
-    <div className="spinner" />
-    <p style={{ color: '#94a3b8', fontSize: '14px' }}>{message}</p>
+    <div style={{ fontSize: '32px', animation: 'spin 2s linear infinite' }}>⚓</div>
+    <p
+      style={{
+        fontFamily: "'Cinzel', serif",
+        color: '#DCE5E8',
+        fontSize: '12px',
+        letterSpacing: '0.18em',
+        textTransform: 'uppercase',
+      }}
+    >
+      {message}
+    </p>
   </div>
 );
 
