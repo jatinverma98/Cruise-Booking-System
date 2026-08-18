@@ -1,5 +1,5 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
-const { nanoid } = require('nanoid');
 
 const Cruise = require('../models/Cruise');
 const Customer = require('../models/Customer');
@@ -34,9 +34,23 @@ const supportsTransactions = async () => {
 };
 
 /**
+ * Generates a unique, formatted booking reference.
+ * Format: ODY-YYYYMMDD-XXXXXX (e.g. ODY-20260818-A7F42C)
+ */
+const generateBookingReference = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const dateStr = `${year}${month}${day}`;
+  const randomSuffix = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6 hex chars
+  return `ODY-${dateStr}-${randomSuffix}`;
+};
+
+/**
  * POST /api/bookings
  *
- * Creates a confirmed booking with strict capacity guarantees.
+ * Creates a permanent, confirmed Booking document with a unique booking reference.
  *
  * Preferred approach:
  * START TRANSACTION (where supported by MongoDB deployment)
@@ -48,9 +62,6 @@ const supportsTransactions = async () => {
  * 6. Create booking
  * 7. Create promo redemption
  * 8. COMMIT (or ROLLBACK on any failure)
- *
- * The conditional query { _id: cruiseId, capacityLeft: { $gte: passengerCount } }
- * provides atomic protection against concurrent requests, guaranteeing zero overselling.
  */
 const createBooking = async (req, res, next) => {
   let session = null;
@@ -160,10 +171,17 @@ const createBooking = async (req, res, next) => {
     // ── Step 6: Calculate final price ───────────────────────────────────────
     const quote = await buildQuoteAsync(cruiseDoc, ages, services, resolvedPromo);
 
-    // Generate booking reference
-    const reference = `BK-${nanoid(7).toUpperCase()}`;
+    // ── Step 7: Generate unique booking reference (e.g. ODY-20260818-A7F42C) ─
+    let reference = generateBookingReference();
 
-    // ── Step 7: Create booking ──────────────────────────────────────────────
+    // Ensure collision resistance (retry if extraordinarily collided)
+    let collision = await Booking.findOne({ reference });
+    while (collision) {
+      reference = generateBookingReference();
+      collision = await Booking.findOne({ reference });
+    }
+
+    // ── Step 8: Create booking document ─────────────────────────────────────
     const bookingData = {
       reference,
       customerId: customerDoc._id,
@@ -183,7 +201,7 @@ const createBooking = async (req, res, next) => {
       booking = await Booking.create(bookingData);
     }
 
-    // ── Step 8: Create promo redemption ─────────────────────────────────────
+    // ── Step 9: Create promo redemption (if applicable) ─────────────────────
     if (resolvedPromo) {
       const redemptionData = {
         promoCodeId: resolvedPromo._id,
@@ -197,7 +215,7 @@ const createBooking = async (req, res, next) => {
       }
     }
 
-    // ── Step 9: COMMIT ──────────────────────────────────────────────────────
+    // ── Step 10: COMMIT ─────────────────────────────────────────────────────
     if (useTx) {
       await session.commitTransaction();
     }
@@ -207,7 +225,11 @@ const createBooking = async (req, res, next) => {
       .populate('customerId', 'name email')
       .populate('cruiseId', 'cruiseLine ship destination nights adultFare');
 
-    res.status(201).json({ success: true, data: fullBooking });
+    res.status(201).json({
+      success: true,
+      reference: fullBooking.reference,
+      data: fullBooking,
+    });
   } catch (error) {
     if (useTx && session) {
       try {
@@ -237,7 +259,7 @@ const createBooking = async (req, res, next) => {
 /**
  * GET /api/bookings/:reference
  *
- * Retrieves a booking by its unique reference code (e.g. BK-ABC1234).
+ * Retrieves a booking by its unique reference code (e.g. ODY-20260818-A7F42C).
  */
 const getBookingByReference = async (req, res, next) => {
   try {
@@ -259,4 +281,4 @@ const getBookingByReference = async (req, res, next) => {
   }
 };
 
-module.exports = { createBooking, getBookingByReference };
+module.exports = { createBooking, getBookingByReference, generateBookingReference };

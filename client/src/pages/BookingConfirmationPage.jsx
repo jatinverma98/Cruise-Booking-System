@@ -67,7 +67,7 @@ const BookingConfirmationPage = () => {
             <input
               id="search-reference-input"
               type="text"
-              placeholder="e.g. BK-ABC1234"
+              placeholder="e.g. ODY-20260818-A7F42C"
               value={searchRef}
               onChange={(e) => setSearchRef(e.target.value.toUpperCase())}
               className="input-field"
